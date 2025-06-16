@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ChronicleAdmin Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin: 5px 0;
+        }
+
+        input {
+            width: 300px;
+            padding: 5px;
+        }
+
+        button {
+            padding: 5px 10px;
+            margin-right: 10px;
+        }
+
+        .log-window {
+            height: 300px; /* Shows ~50 lines; adjust as needed */
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px dashed #aaa;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .subscription {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chronicle Admin Client</h1>
+
+    <!-- New "Client Settings" Section -->
+    <section>
+        <h2>Client Settings</h2>
+        <label for="clientIdInput">Client ID:</label>
+        <input type="text" id="clientIdInput" placeholder="Enter Client ID">
+        <button id="setClientIdButton">Set Client ID</button>
+    </section>
+
+    <section>
+        <h2>Data Feed Settings</h2>
+        <form id="settingsForm">
+            <label>Feed Type: <input type="text" id="feed-type" placeholder="e.g., databento"></label>
+            <label>API Key: <input type="text" id="api_key" placeholder="e.g., db-XYZYZ"></label>
+            <label>Dataset: <input type="text" id="dataset" placeholder="e.g., GLBX.MDP3"></label>
+            <label>Live Host: <input type="text" id="live_host" placeholder="e.g., glbx-mdp3.lsg.databento.com"></label>
+            <label>Live Port: <input type="number" id="live_port" placeholder="e.g., 13000"></label>
+            <label>Historical Host: <input type="text" id="hist_host" placeholder="e.g., https://hist.databento.com/v0/timeseries.get_range"></label>
+            <button type="button" onclick="getSettings()">GET SETTINGS</button>
+            <button type="button" onclick="saveSettings()">SAVE SETTINGS</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Clear Cache</h2>
+        <form id="cacheForm">
+            <label>Instrument: <input type="text" id="instrument" placeholder="e.g., ESM5 (leave blank for all)"></label>
+            <label>Timeframe: <input type="text" id="timeframe" placeholder="e.g., 1m (leave blank for all)"></label>
+            <label>Start Time: <input type="datetime-local" id="start_time" placeholder="e.g., 2025-03-29T12:00 (leave blank for all)"></label>
+            <label>End Time: <input type="datetime-local" id="end_time" placeholder="e.g., 2025-03-29T13:00 (leave blank for all)"></label>
+            <button type="button" onclick="clearCache()">Clear Cache</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Get Data</h2>
+        <form id="dataForm">
+            <div class="subscription">
+                <label>Instrument 1: <input type="text" id="inst1" placeholder="e.g., ESM5"></label>
+                <label>Timeframe 1: <input type="text" id="tf1" placeholder="e.g., 5m"></label>
+            </div>
+            <div class="subscription">
+                <label>Instrument 2: <input type="text" id="inst2" placeholder="e.g., NQM5"></label>
+                <label>Timeframe 2: <input type="text" id="tf2" placeholder="e.g., 1m"></label>
+            </div>
+            <div class="subscription">
+                <label>Instrument 3: <input type="text" id="inst3"></label>
+                <label>Timeframe 3: <input type="text" id="tf3"></label>
+            </div>
+            <div class="subscription">
+                <label>Instrument 4: <input type="text" id="inst4"></label>
+                <label>Timeframe 4: <input type="text" id="tf4"></label>
+            </div>
+            <label>Start Time: <input type="datetime-local" id="data_start_time" placeholder="Leave blank for 60 days ago"></label>
+            <label>End Time: <input type="datetime-local" id="data_end_time" placeholder="Leave blank for current"></label>
+            <label>Live Data: <input type="text" id="live_data" placeholder="e.g., none, 300, all (leave blank for none)"></label>
+            <label>
+                Send To:
+                <select id="send_to">
+                    <option value="console">Console</option>
+                    <option value="log">Log File</option>
+                    <option value="websocket">WebSocket</option>
+                </select>
+            </label>
+            <label><input type="checkbox" id="no_cache"> Don't Use Cache</label>
+            <label><input type="checkbox" id="no_save"> Don't Save to Cache</label>
+            <button type="button" onclick="sendDataRequest()">Send Data Request</button>
+        </form>
+    </section>
+
+    <!-- New "Get Replay" Section -->
+    <section>
+        <h2>Get Replay</h2>
+        <form id="replayForm">
+            <div class="subscription">
+                <label>Instrument 1: <input type="text" id="replay_inst1" placeholder="e.g., ESM5"></label>
+                <label>Timeframe 1: <input type="text" id="replay_tf1" placeholder="e.g., 5m"></label>
+            </div>
+            <div class="subscription">
+                <label>Instrument 2: <input type="text" id="replay_inst2" placeholder="e.g., NQM5"></label>
+                <label>Timeframe 2: <input type="text" id="replay_tf2" placeholder="e.g., 1m"></label>
+            </div>
+            <div class="subscription">
+                <label>Instrument 3: <input type="text" id="replay_inst3"></label>
+                <label>Timeframe 3: <input type="text" id="replay_tf3"></label>
+            </div>
+            <div class="subscription">
+                <label>Instrument 4: <input type="text" id="replay_inst4"></label>
+                <label>Timeframe 4: <input type="text" id="replay_tf4"></label>
+            </div>
+            <label>History Start: <input type="datetime-local" id="history_start_time" placeholder="Start time for historical data"></label>
+            <label>Live Start: <input type="datetime-local" id="live_start_time" placeholder="Time to start sending minute updates"></label>
+            <label>Live End: 
+                <select id="live_end_type">
+                    <option value="none">None</option>
+                    <option value="all">All (Current Time)</option>
+                    <option value="timestamp">Timestamp</option>
+                    <option value="seconds">Seconds to Stream</option>
+                </select>
+                <input type="datetime-local" id="live_end_time" placeholder="End time for replay" style="display: none;">
+                <input type="number" id="live_end_seconds" placeholder="Seconds to stream" style="display: none;">
+            </label>
+            <label>Replay Interval (ms): <input type="number" id="replay_interval" placeholder="e.g., 1000" value="1000"></label>
+            <label>
+                Send To:
+                <select id="replay_send_to">
+                    <option value="console">Console</option>
+                    <option value="log">Log File</option>
+                    <option value="websocket">WebSocket</option>
+                </select>
+            </label>
+            <label><input type="checkbox" id="replay_no_cache"> Don't Use Cache</label>
+            <button type="button" onclick="sendReplayRequest()">Start Replay</button>
+            <button type="button" onclick="stopReplay()">Stop Replay</button>
+            <button type="button" onclick="pauseReplay()">Pause Replay</button>
+            <button type="button" onclick="resumeReplay()">Resume Replay</button>
+            <div style="margin-top: 10px;">
+                <label>Change Replay Speed: 
+                    <input type="number" id="change_replay_interval" placeholder="New interval (ms)" value="1000">
+                    <button type="button" onclick="changeReplayInterval()">Apply</button>
+                </label>
+            </div>
+        </form>
+    </section>
+
+    <!-- "Manage Timeframes" Section -->
+    <section>
+        <h2>Manage Timeframes</h2>
+        <label for="manage-instrument">Instrument:</label>
+        <input type="text" id="manage-instrument" placeholder="e.g., ESM5">
+        <label for="manage-timeframe">Timeframe:</label>
+        <select id="manage-timeframe">
+            <option value="1m">1 Minute</option>
+            <option value="5m">5 Minutes</option>
+            <option value="10m">10 Minutes</option>
+            <option value="15m">15 Minutes</option>
+            <option value="30m">30 Minutes</option>
+            <option value="1h">1 Hour</option>
+            <option value="4h">4 Hours</option>
+            <option value="1d">1 Day</option>
+        </select>
+        <button id="add-timeframe-btn">Add Timeframe</button>
+        <button id="remove-timeframe-btn">Remove Timeframe</button>
+    </section>
+
+    <!-- "Manage Annotations" Section -->
+    <section>
+        <h2>Manage Annotations</h2>
+        <label for="anno-client-id">Client ID:</label>
+        <input type="text" id="anno-client-id" placeholder="e.g., quatrain-dev">
+        <label for="anno-unique-id">Unique ID:</label>
+        <input type="text" id="anno-unique-id" placeholder="e.g., m9em3r8njzdlb">
+        <button id="delete-anno-btn">Delete Annotations</button>
+    </section>
+
+    <!-- "Retrieve Annotations" Section -->
+    <section>
+        <h2>Retrieve Annotations</h2>
+        <label for="get-anno-client-id">Client ID:</label>
+        <input type="text" id="get-anno-client-id" placeholder="e.g., quatrain-dev">
+        <label for="get-anno-instrument">Instrument:</label>
+        <input type="text" id="get-anno-instrument" placeholder="e.g., ESM5">
+        <label for="get-anno-timeframe">Timeframe:</label>
+        <input type="text" id="get-anno-timeframe" placeholder="e.g., 1h (or 'all')">
+        <button id="get-anno-btn">Get Annotations</button>
+    </section>
+
+    <!-- "Strategy Subscription" Section -->
+    <section>
+        <h2>Strategy Subscription</h2>
+        <label for="strat-client-id">Client ID:</label>
+        <input type="text" id="strat-client-id" placeholder="e.g., quatrain-dev">
+        <label for="strat-strategy-id">Strategy ID:</label>
+        <input type="text" id="strat-strategy-id" placeholder="e.g., strategy-xyz">
+        <button id="subscribe-btn">Subscribe</button>
+        <button id="unsubscribe-btn">Unsubscribe</button>
+    </section>
+
+    <h2>Messages and Control Info</h2>
+    <div id="response" class="log-window"></div>
+
+    <!-- Data Feed section with clear button -->
+    <h2>Data Feed <button id="clearDataFeedBtn" style="float: right; margin-top: 5px;">Clear</button></h2>
+    <div id="dataFeed" class="log-window"></div>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        const responseDiv = document.getElementById('response');
+        const dataFeedDiv = document.getElementById('dataFeed');
+        const clearDataFeedBtn = document.getElementById('clearDataFeedBtn');
+        const maxLines = 50000; // Limit for Data Feed to conserve memory
+        let dataFeedLines = [];
+
+        // Clear data feed function
+        clearDataFeedBtn.addEventListener('click', () => {
+            dataFeedLines = [];
+            dataFeedDiv.textContent = '';
+            console.log('Data feed cleared');
+        });
+
+        ws.onopen = () => {
+            console.log('Connected to WebSocket server');
+            appendToLog(responseDiv, 'Connected to WebSocket server');
+        };
+
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            if (message.mtyp === 'data') {
+                appendToDataFeed(JSON.stringify(message));
+            } else {
+                appendToLog(responseDiv, JSON.stringify(message, null, 2));
+            }
+            if (message.action === 'settings_response' && message.value) {
+                document.getElementById('feed-type').value = message.value['feed-type'] || '';
+                document.getElementById('api_key').value = message.value['api_key'] || '';
+                document.getElementById('dataset').value = message.value['dataset'] || '';
+                document.getElementById('live_host').value = message.value['live_host'] || '';
+                document.getElementById('live_port').value = message.value['live_port'] || '';
+                document.getElementById('hist_host').value = message.value['hist_host'] || '';
+            }
+        };
+
+        ws.onerror = (err) => {
+            console.error('WebSocket error:', err);
+            appendToLog(responseDiv, 'WebSocket error: ' + err.message);
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket connection closed');
+            appendToLog(responseDiv, 'WebSocket connection closed');
+        };
+
+        function appendToLog(div, message) {
+            div.textContent += message + '\n';
+            div.scrollTop = div.scrollHeight; // Auto-scroll to bottom
+        }
+
+        function appendToDataFeed(message) {
+            if (dataFeedLines.length >= maxLines) {
+                dataFeedLines.shift(); // Remove oldest line
+            }
+            dataFeedLines.push(message);
+            dataFeedDiv.textContent = dataFeedLines.join('\n');
+            dataFeedDiv.scrollTop = dataFeedDiv.scrollHeight; // Auto-scroll to bottom
+        }
+
+        function getSettings() {
+            const message = { action: 'get_settings', settings: 'DATAFEED' };
+            ws.send(JSON.stringify(message));
+        }
+
+        function saveSettings() {
+            const newValues = {
+                'feed-type': document.getElementById('feed-type').value,
+                'api_key': document.getElementById('api_key').value,
+                'dataset': document.getElementById('dataset').value,
+                'live_host': document.getElementById('live_host').value,
+                'live_port': parseInt(document.getElementById('live_port').value) || 0,
+                'hist_host': document.getElementById('hist_host').value
+            };
+            const message = { action: 'save_settings', settings: 'DATAFEED', new_values: newValues };
+            ws.send(JSON.stringify(message));
+        }
+
+        function clearCache() {
+            const message = {
+                action: 'clear_cache',
+                instrument: document.getElementById('instrument').value || 'all',
+                timeframe: document.getElementById('timeframe').value || 'all',
+                start_time: document.getElementById('start_time').value ? new Date(document.getElementById('start_time').value).getTime() : 'all',
+                end_time: document.getElementById('end_time').value ? new Date(document.getElementById('end_time').value).getTime() : 'all'
+            };
+            ws.send(JSON.stringify(message));
+        }
+
+        function sendDataRequest() {
+            const subscriptions = [];
+            for (let i = 1; i <= 4; i++) {
+                const inst = document.getElementById(`inst${i}`).value;
+                const tf = document.getElementById(`tf${i}`).value;
+                if (inst && tf) subscriptions.push({ instrument: inst, timeframe: tf });
+            }
+
+            const message = { action: 'get_data' };
+            if (subscriptions.length > 0) message.subscriptions = subscriptions;
+            const startTime = document.getElementById('data_start_time').value;
+            if (startTime) message.start_time = new Date(startTime).getTime();
+            const endTime = document.getElementById('data_end_time').value;
+            if (endTime) message.end_time = new Date(endTime).getTime();
+            const liveData = document.getElementById('live_data').value;
+            if (liveData) message.live_data = liveData;
+            message.sendto = document.getElementById('send_to').value;
+            if (document.getElementById('no_cache').checked) message.use_cache = false;
+            if (document.getElementById('no_save').checked) message.save_cache = false;
+
+            console.log('Sending get_data request:', message);
+            ws.send(JSON.stringify(message));
+        }
+
+        // Replay functionality
+        function sendReplayRequest() {
+            const subscriptions = [];
+            for (let i = 1; i <= 4; i++) {
+                const inst = document.getElementById(`replay_inst${i}`).value;
+                const tf = document.getElementById(`replay_tf${i}`).value;
+                if (inst && tf) subscriptions.push({ instrument: inst, timeframe: tf });
+            }
+
+            if (subscriptions.length === 0) {
+                alert('Please specify at least one instrument and timeframe subscription');
+                return;
+            }
+
+            const historyStartTime = document.getElementById('history_start_time').value;
+            if (!historyStartTime) {
+                alert('Please specify a history start time');
+                return;
+            }
+
+            const liveStartTime = document.getElementById('live_start_time').value;
+            if (!liveStartTime) {
+                alert('Please specify a live start time');
+                return;
+            }
+
+            const message = { 
+                action: 'get_replay',
+                subscriptions: subscriptions,
+                history_start: new Date(historyStartTime).getTime(),
+                live_start: new Date(liveStartTime).getTime()
+            };
+
+            // Handle live_end based on selection
+            const liveEndType = document.getElementById('live_end_type').value;
+            if (liveEndType === 'timestamp') {
+                const liveEndTime = document.getElementById('live_end_time').value;
+                if (liveEndTime) {
+                    message.live_end = new Date(liveEndTime).getTime();
+                } else {
+                    alert('Please specify a live end time');
+                    return;
+                }
+            } else if (liveEndType === 'seconds') {
+                const liveEndSeconds = document.getElementById('live_end_seconds').value;
+                if (liveEndSeconds) {
+                    message.live_end = parseInt(liveEndSeconds);
+                } else {
+                    alert('Please specify seconds to stream');
+                    return;
+                }
+            } else {
+                message.live_end = liveEndType; // 'none' or 'all'
+            }
+
+            // Replay interval
+            const replayInterval = document.getElementById('replay_interval').value;
+            if (replayInterval) {
+                message.replay_interval = parseInt(replayInterval);
+            }
+
+            // Send to
+            message.sendto = document.getElementById('replay_send_to').value;
+
+            // Use cache
+            if (document.getElementById('replay_no_cache').checked) {
+                message.use_cache = false;
+            }
+
+            console.log('Sending get_replay request:', message);
+            ws.send(JSON.stringify(message));
+        }
+
+        function stopReplay() {
+            const message = { action: 'stop_replay' };
+            console.log('Sending stop_replay request');
+            ws.send(JSON.stringify(message));
+        }
+
+        function pauseReplay() {
+            const message = { 
+                action: 'modify_replay',
+                pause: true
+            };
+            console.log('Sending modify_replay request to pause replay');
+            ws.send(JSON.stringify(message));
+        }
+
+        function resumeReplay() {
+            const message = { 
+                action: 'modify_replay',
+                pause: false
+            };
+            console.log('Sending modify_replay request to resume replay');
+            ws.send(JSON.stringify(message));
+        }
+
+        function changeReplayInterval() {
+            const newInterval = document.getElementById('change_replay_interval').value;
+            if (newInterval) {
+                const message = { 
+                    action: 'modify_replay',
+                    replay_interval: parseInt(newInterval)
+                };
+                console.log('Sending modify_replay request to change interval:', message);
+                ws.send(JSON.stringify(message));
+            } else {
+                alert('Please enter a valid interval');
+            }
+        }
+
+        // Handle live_end type selection changes
+        document.getElementById('live_end_type').addEventListener('change', function() {
+            const liveEndType = this.value;
+            const liveEndTimeInput = document.getElementById('live_end_time');
+            const liveEndSecondsInput = document.getElementById('live_end_seconds');
+            
+            // Hide both by default
+            liveEndTimeInput.style.display = 'none';
+            liveEndSecondsInput.style.display = 'none';
+            
+            // Show appropriate input based on selection
+            if (liveEndType === 'timestamp') {
+                liveEndTimeInput.style.display = 'inline-block';
+            } else if (liveEndType === 'seconds') {
+                liveEndSecondsInput.style.display = 'inline-block';
+            }
+        });
+
+        // Manage Timeframes Functionality
+        const manageInstrumentInput = document.getElementById('manage-instrument');
+        const manageTimeframeSelect = document.getElementById('manage-timeframe');
+        const addTimeframeBtn = document.getElementById('add-timeframe-btn');
+        const removeTimeframeBtn = document.getElementById('remove-timeframe-btn');
+
+        addTimeframeBtn.addEventListener('click', () => {
+            const instrument = manageInstrumentInput.value.trim();
+            const timeframe = manageTimeframeSelect.value;
+            if (instrument && timeframe) {
+                const message = {
+                    action: 'add_timeframe',
+                    instrument: instrument,
+                    timeframe: timeframe
+                };
+                ws.send(JSON.stringify(message));
+            } else {
+                alert('Please enter an instrument and select a timeframe.');
+            }
+        });
+
+        removeTimeframeBtn.addEventListener('click', () => {
+            const instrument = manageInstrumentInput.value.trim();
+            const timeframe = manageTimeframeSelect.value;
+            if (instrument && timeframe) {
+                const message = {
+                    action: 'remove_timeframe',
+                    instrument: instrument,
+                    timeframe: timeframe
+                };
+                ws.send(JSON.stringify(message));
+            } else {
+                alert('Please enter an instrument and select a timeframe.');
+            }
+        });
+
+        // Set Client ID Functionality
+        const clientIdInput = document.getElementById('clientIdInput');
+        const setClientIdButton = document.getElementById('setClientIdButton');
+
+        setClientIdButton.addEventListener('click', () => {
+            const clientId = clientIdInput.value.trim();
+            if (!clientId) {
+                alert('Please enter a valid Client ID');
+                return;
+            }
+            const request = {
+                action: 'set_client_id',
+                clientid: clientId
+            };
+            ws.send(JSON.stringify(request));
+            clientIdInput.value = ''; // Clear the input after sending
+            console.log(`Sent set_client_id request with ID: ${clientId}`);
+        });
+
+        // Manage Annotations Functionality
+        const annoClientIdInput = document.getElementById('anno-client-id');
+        const annoUniqueIdInput = document.getElementById('anno-unique-id');
+        const deleteAnnoBtn = document.getElementById('delete-anno-btn');
+
+        deleteAnnoBtn.addEventListener('click', () => {
+            const clientId = annoClientIdInput.value.trim() || 'all';
+            const uniqueId = annoUniqueIdInput.value.trim() || 'all';
+            
+            const request = {
+                action: 'delete_anno',
+                clientid: clientId,
+                unique: uniqueId
+            };
+            
+            ws.send(JSON.stringify(request));
+            console.log(`Sent delete_anno request for clientid: ${clientId}, unique: ${uniqueId}`);
+        });
+
+        // Retrieve Annotations Functionality
+        const getAnnoClientIdInput = document.getElementById('get-anno-client-id');
+        const getAnnoInstrumentInput = document.getElementById('get-anno-instrument');
+        const getAnnoTimeframeInput = document.getElementById('get-anno-timeframe');
+        const getAnnoBtn = document.getElementById('get-anno-btn');
+
+        getAnnoBtn.addEventListener('click', () => {
+            const clientId = getAnnoClientIdInput.value.trim() || 'all';
+            const instrument = getAnnoInstrumentInput.value.trim() || 'all';
+            const timeframe = getAnnoTimeframeInput.value.trim() || 'all';
+            
+            const message = {
+                action: 'get_anno'
+            };
+            
+            // Only include fields with values
+            if (clientId !== 'all') {
+                message.clientid = clientId;
+                message.clienttype = 'client';
+            } else {
+                message.clienttype = 'all';
+            }
+            if (instrument !== 'all') message.instrument = instrument;
+            if (timeframe !== 'all') message.timeframe = timeframe;
+            
+            ws.send(JSON.stringify(message));
+            console.log(`Sent get_anno request with: ${JSON.stringify(message)}`);
+        });
+
+        // Strategy Subscription Functionality
+        const stratClientIdInput = document.getElementById('strat-client-id');
+        const stratStrategyIdInput = document.getElementById('strat-strategy-id');
+        const subscribeBtn = document.getElementById('subscribe-btn');
+        const unsubscribeBtn = document.getElementById('unsubscribe-btn');
+
+        subscribeBtn.addEventListener('click', () => {
+            const clientId = stratClientIdInput.value.trim();
+            const strategyId = stratStrategyIdInput.value.trim();
+            
+            if (!clientId || !strategyId) {
+                alert('Please enter both Client ID and Strategy ID');
+                return;
+            }
+            
+            const request = {
+                action: 'sub_strat',
+                clientid: clientId,
+                stratid: strategyId
+            };
+            
+            ws.send(JSON.stringify(request));
+            console.log(`Sent sub_strat request: ${JSON.stringify(request)}`);
+        });
+
+        unsubscribeBtn.addEventListener('click', () => {
+            const clientId = stratClientIdInput.value.trim();
+            const strategyId = stratStrategyIdInput.value.trim();
+            
+            if (!clientId || !strategyId) {
+                alert('Please enter both Client ID and Strategy ID');
+                return;
+            }
+            
+            const request = {
+                action: 'unsub_strat',
+                clientid: clientId,
+                stratid: strategyId
+            };
+            
+            ws.send(JSON.stringify(request));
+            console.log(`Sent unsub_strat request: ${JSON.stringify(request)}`);
+        });
+    </script>
+</body>
+</html> 

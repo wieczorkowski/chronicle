@@ -1,0 +1,20 @@
+{
+  "name": "chronicle",
+  "version": "0.2.2",
+  "main": "chronicle.js",
+  "scripts": {
+    "start": "node chronicle.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["websocket", "market-data", "trading", "databento", "ohlcv", "financial"],
+  "author": "Mark",
+  "license": "ISC",
+  "description": "A back-end data engine for trading/charting software that connects to market data providers and serves real-time financial data via WebSocket",
+  "dependencies": {
+    "axios": "^1.8.4",
+    "crypto": "^1.0.1",
+    "net": "^1.0.2",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.18.1"
+  }
+}
